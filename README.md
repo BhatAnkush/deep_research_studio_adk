@@ -17,6 +17,7 @@ Create `research_studio/.env` (inside the agent package, next to `agent.py`). Ne
 ```
 GOOGLE_GENAI_USE_VERTEXAI=FALSE
 GOOGLE_API_KEY=your_key_here
+GROQ_API_KEY=your_key_here
 ```
 
 Optional later:

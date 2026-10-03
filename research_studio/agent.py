@@ -1,16 +1,23 @@
 from google.adk.agents.llm_agent import Agent
-from google.adk.tools.google_search_tool import GoogleSearchTool
-from google.genai import types
+from google.adk.models.google_llm import Gemini
+from google.adk.models.lite_llm import LiteLlm
+from .fallback_llm import FallbackLlm
 
-from .tools import fetch_url
+from .tools import fetch_url, web_search
 
-MODEL = "gemini-3.5-flash-lite"
-
+# Check the exact name on Groq's model list; it must support tool calling.
+PRIMARY = "groq/llama-3.3-70b-versatile"
+FALLBACK = "gemini-3.5-flash"
+llm = FallbackLlm(
+    model="fallback-llm",
+    primary=LiteLlm(model=PRIMARY),
+    fallback=Gemini(model=FALLBACK),
+)
 INSTRUCTION = """You are a research assistant helping a curious developer understand topics quickly and accurately.
 
 How to answer:
 - Start with a 2-3 sentence summary, then give details in short sections.
-- Use Google Search for anything recent, changing, or that you are not certain about. Do not search for stable, well-known facts.
+- Use web_search for anything recent, changing, or that you are not certain about. Do not search for stable, well-known facts.
 - Use fetch_url when the user gives a URL or you need to read a specific page.
 - State where key claims come from (site or publication name).
 - If sources disagree or the evidence is thin, say so plainly instead of picking a side.
@@ -21,14 +28,9 @@ What not to do:
 - Do not present a guess as a fact."""
 
 root_agent = Agent(
-    model=MODEL,
+    model=llm,
     name="research_assistant",
     description="Answers research questions using web search and returns structured, source-aware summaries",
     instruction=INSTRUCTION,
-    tools=[GoogleSearchTool(bypass_multi_tools_limit=True), fetch_url],
-    generate_content_config=types.GenerateContentConfig(
-        http_options=types.HttpOptions(
-            retry_options=types.HttpRetryOptions(initial_delay=1, attempts=3)
-        )
-    ),
+    tools=[web_search, fetch_url],
 )
